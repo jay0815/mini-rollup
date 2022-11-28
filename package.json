@@ -1,0 +1,16 @@
+{
+  "name": "mini-rollup",
+  "version": "1.0.0",
+  "description": "mini rollup",
+  "main": "src/index.js",
+  "scripts": {
+    "jest": "jest"
+  },
+  "author": "Jack",
+  "license": "MIT",
+  "dependencies": {
+    "acorn": "^8.8.1",
+    "jest": "^29.3.1",
+    "magic-string": "^0.26.7"
+  }
+}
