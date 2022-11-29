@@ -1,13 +1,52 @@
 const fs = require('fs');
 const path = require('path')
 const acorn = require('acorn');
-// const MagicString = require('magic-string');
+const visitors = require('../visitors/index');
 
-function visiter (node, parent, enter, leave) {
-  enter(node)
+const enter = (parent, type, cb) => {
+  if (typeof cb === 'function') {
+    cb()
+  }
+  if (!parent) {
+    parent = {
+      type: 'global',
+      children: []
+    }
+  }
+  if (type) {
+    // init
+    const current = {
+      type: type,
+      value: undefined,
+      children: []
+    }
+    parent.children.push(current);
+    return current;
+  }
+}
 
-  leave(node)
-  return 'a';
+const leave = (current, value, cb) => {
+  if (current) {
+    current.value = value;
+  }
+  if (typeof cb === 'function') {
+    cb()
+  }
+}
+
+const executor = {
+  enter,
+  leave,
+  visiter
+}
+
+function visiter (node, parent, walk = executor, indent = '') {
+  if (node.type) {
+    const nextVisitors = visitors[node.type];
+    if (nextVisitors) {
+      nextVisitors(node, parent, walk, indent)
+    }
+  }
 }
 
 const __main__ = () => {
@@ -18,11 +57,7 @@ const __main__ = () => {
     sourceType: 'module',
     ecmaVersion: 7
   })
-  const scope = visiter(ast.body, null, (node) => {
-    console.log('start Line', node.loc.start.line)
-  }, (node) => {
-    console.log('end Line', node.loc.start.line)
-  })
+  visiter(ast, null)
 }
 
 
