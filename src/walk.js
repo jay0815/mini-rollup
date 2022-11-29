@@ -16,7 +16,6 @@ function visiter (node, parent, enter, leave) {
     })
   }
   leave(node)
-  return 'a';
 }
 
 module.exports = visiter

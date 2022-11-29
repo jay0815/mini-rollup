@@ -5,4 +5,7 @@ function f1() {
   function f2() {
     const f = 3;
   }
+  const g = 3
 }
+
+const t = 7
