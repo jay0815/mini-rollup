@@ -2,7 +2,7 @@ const visitors = require('../visitors/index');
 const Scope = require('./scope');
 const { print } = require('../utils/space');
 
-const enter = (node, parent, indent) => {
+const enter = (node, parent, indent, [importRecord, exportRecord]) => {
   if (node.type) {
     switch (node.type) {
       case "Program": {
@@ -10,9 +10,13 @@ const enter = (node, parent, indent) => {
         break;
       }
       case "VariableDeclarator": {
-        print(indent, `Variable: ${node.id.name}`)
-        // just global\function\module and special block scope
-        parent._scope.add(node.id.name, null);
+        if (parent.type === 'ExportNamedDeclaration') {
+          exportRecord.push(node.id.name)
+        } else {
+          print(indent, `Variable: ${node.id.name}`)
+          // just global\function\module and special block scope
+          parent._scope.add(node.id.name, null);
+        }
         break;
       }
       case "FunctionDeclaration": {
@@ -24,6 +28,14 @@ const enter = (node, parent, indent) => {
         parent._scope.add(node.id.name, node._scope);
         break;
       }
+      case "ImportDefaultSpecifier": {
+        importRecord.push(node.local.name)
+        break;
+      }
+      case "ImportSpecifier": {
+        importRecord.push(node.local.name)
+        break;
+      }
       default: {
         node._scope = parent._scope;
         break;
@@ -32,11 +44,13 @@ const enter = (node, parent, indent) => {
   }
 }
 
-const leave = (node, indent) => {
+const leave = (node, indent, walk) => {
   if (node.type) {
     switch (node.type) {
       case "Program": {
         print(indent, `Global Scope End`)
+        console.log('import Declarations:', JSON.stringify(walk.importRecord));
+        console.log('export Declarations:', JSON.stringify(walk.exportRecord));
         break;
       }
       case "FunctionDeclaration": {
@@ -53,17 +67,19 @@ const leave = (node, indent) => {
 const executor = {
   enter,
   leave,
-  visiter
+  visiter,
+  importRecord: [],
+  exportRecord: []
 }
 
 function visiter (node, parent, walk = executor, indent = 0) {
   if (node.type) {
     const nextVisitors = visitors[node.type];
-    walk.enter(node, parent, indent);
+    walk.enter(node, parent, indent, [walk.importRecord, walk.exportRecord]);
     if (nextVisitors) {
       nextVisitors(node, parent, walk, indent)
     }
-    walk.leave(node, indent);
+    walk.leave(node, indent, walk);
   }
 }
 

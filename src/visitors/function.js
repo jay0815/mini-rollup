@@ -6,7 +6,11 @@ const BlockStatement = (node, parent, walk, indent) => {
 }
 
 const FunctionDeclaration = (node, parent, walk, indent) => {
-    walk.visiter(node.body, node, walk, indent + 1)
+    if (parent && parent.type === "ExportNamedDeclaration") {
+        walk.visiter(node.body, parent, walk, indent)
+    } else {
+        walk.visiter(node.body, node, walk, indent + 1)
+    }
 }
 
 
