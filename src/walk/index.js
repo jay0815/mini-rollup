@@ -1,25 +1,52 @@
-const fs = require('fs');
-const path = require('path')
-const acorn = require('acorn');
 const visitors = require('../visitors/index');
 const Scope = require('./scope');
+const { print } = require('../utils/space');
 
-const enter = (parent, cb) => {
-  if (typeof cb === 'function') {
-    cb()
+const enter = (node, parent, indent) => {
+  if (node.type) {
+    switch (node.type) {
+      case "Program": {
+        print(indent, `Global Scope Start`)
+        break;
+      }
+      case "VariableDeclarator": {
+        print(indent, `Variable: ${node.id.name}`)
+        // just global\function\module and special block scope
+        parent._scope.add(node.id.name, null);
+        break;
+      }
+      case "FunctionDeclaration": {
+        const functionScop = new Scope({
+          parent: parent._scope
+        });
+        node._scope = functionScop;
+        print(indent, `Function: ${node.id.name} -> Scope Start`)
+        parent._scope.add(node.id.name, node._scope);
+        break;
+      }
+      default: {
+        node._scope = parent._scope;
+        break;
+      }
+    }
   }
-  const current = new Scope({
-    parent
-  })
-  return current;
 }
 
-const leave = (current, value, cb) => {
-  if (current) {
-    current.add(value);
-  }
-  if (typeof cb === 'function') {
-    cb()
+const leave = (node, indent) => {
+  if (node.type) {
+    switch (node.type) {
+      case "Program": {
+        print(indent, `Global Scope End`)
+        break;
+      }
+      case "FunctionDeclaration": {
+        print(indent, `Function: ${node.id.name} -> Scope End`)
+        break;
+      }
+      default: {
+        break;
+      }
+    }
   }
 }
 
@@ -32,24 +59,12 @@ const executor = {
 function visiter (node, parent, walk = executor, indent = 0) {
   if (node.type) {
     const nextVisitors = visitors[node.type];
+    walk.enter(node, parent, indent);
     if (nextVisitors) {
       nextVisitors(node, parent, walk, indent)
     }
+    walk.leave(node, indent);
   }
 }
-
-// const __main__ = () => {
-//   const file = fs.readFileSync(path.join(__dirname,'../example.js'), 'utf-8').toString();
-//   const ast = acorn.parse(file, {
-//     locations: true,
-//     ranges: true,
-//     sourceType: 'module',
-//     ecmaVersion: 7
-//   })
-//   visiter(ast, null)
-// }
-
-
-// __main__();
 
 module.exports = visiter;

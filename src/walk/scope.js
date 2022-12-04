@@ -4,22 +4,33 @@ class Scope {
     this.scope = {};
   }
 
-  add (variable) {
-    this.scope[variable] = true;
+  add (variable, scope) {
+    this.scope[variable] = scope;
   }
 
   contains(variable) {
-    return !!this.findDefiningScope(variable);
+    const part = this.findDefiningScope(variable);
+    return typeof part !== 'undefined';
   }
 
   findDefiningScope(variable) {
-    if (this.scope[variable]) {
-      return this
+    if (typeof this.scope[variable] !== 'undefined') {
+      return  this;
     }
     if (this.parent) {
       return this.parent.findDefiningScope(variable)
     }
-    return null;
+    return undefined;
+  }
+
+  findDefining(variable) {
+    if (typeof this.scope[variable] !== 'undefined') {
+      return  this.scope[variable];
+    }
+    if (this.parent) {
+      return this.parent.findDefining(variable)
+    }
+    return undefined;
   }
 
 }
