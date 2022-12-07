@@ -2,21 +2,42 @@ const visitors = require('../visitors/index');
 const Scope = require('./scope');
 const { print } = require('../utils/space');
 
-const enter = (node, parent, indent, [importRecord, exportRecord]) => {
+const enter = (node, parent, indent) => {
   if (node.type) {
     switch (node.type) {
       case "Program": {
-        print(indent, `Global Scope Start`)
+        // print(indent, `Global Scope Start`)
+        break;
+      }
+      case "Identifier": {
+        //从当前的作用域向上递归，找这个变量在哪个作用域中定义 
+        const definingScope = node._scope.findDefiningScope(node.name); 
+        if (!definingScope) { 
+            statement._dependsOn[node.name] = true;//表示这是一个外部依赖的变量 
+        }
         break;
       }
       case "VariableDeclarator": {
         if (parent.type === 'ExportNamedDeclaration') {
-          exportRecord.push(node.id.name)
+          parent._module.setExportParams(node.id.name, {
+            localName: node.id.name,
+            node: parent,
+            expression: parent.declaration
+          })
         } else {
-          print(indent, `Variable: ${node.id.name}`)
+          // print(indent, `Variable: ${node.id.name}`)
           // just global\function\module and special block scope
+          parent._module.setDefinitions(node.id.name, parent)
           parent._scope.add(node.id.name, null);
         }
+        break;
+      }
+      case "ExportDefaultDeclaration": {
+        parent._module.setExportParams(node.declaration.name, {
+          name: node.declaration.name,
+          expression: node.declaration,
+          node: node,
+        })
         break;
       }
       case "FunctionDeclaration": {
@@ -24,37 +45,44 @@ const enter = (node, parent, indent, [importRecord, exportRecord]) => {
           parent: parent._scope
         });
         node._scope = functionScop;
-        print(indent, `Function: ${node.id.name} -> Scope Start`)
+        // print(indent, `Function: ${node.id.name} -> Scope Start`)
         parent._scope.add(node.id.name, node._scope);
         break;
       }
       case "ImportDefaultSpecifier": {
-        importRecord.push(node.local.name)
+        parent._module.setImportParams(node.local.name, {
+          localName: node.local.name,
+          name: "",
+          source: parent.source.value
+        })
         break;
       }
       case "ImportSpecifier": {
-        importRecord.push(node.local.name)
+        parent._module.setImportParams(node.imported.name, {
+          localName: node.local.name,
+          name: node.imported.name,
+          source: parent.source.value
+        })
         break;
       }
       default: {
         node._scope = parent._scope;
+        node._module = parent._module;
         break;
       }
     }
   }
 }
 
-const leave = (node, indent, walk) => {
+const leave = (node, indent) => {
   if (node.type) {
     switch (node.type) {
       case "Program": {
-        print(indent, `Global Scope End`)
-        console.log('import Declarations:', JSON.stringify(walk.importRecord));
-        console.log('export Declarations:', JSON.stringify(walk.exportRecord));
+        // print(indent, `Global Scope End`)
         break;
       }
       case "FunctionDeclaration": {
-        print(indent, `Function: ${node.id.name} -> Scope End`)
+        // print(indent, `Function: ${node.id.name} -> Scope End`)
         break;
       }
       default: {
@@ -68,18 +96,16 @@ const executor = {
   enter,
   leave,
   visiter,
-  importRecord: [],
-  exportRecord: []
 }
 
 function visiter (node, parent, walk = executor, indent = 0) {
   if (node.type) {
     const nextVisitors = visitors[node.type];
-    walk.enter(node, parent, indent, [walk.importRecord, walk.exportRecord]);
+    walk.enter(node, parent, indent);
     if (nextVisitors) {
       nextVisitors(node, parent, walk, indent)
     }
-    walk.leave(node, indent, walk);
+    walk.leave(node, indent);
   }
 }
 

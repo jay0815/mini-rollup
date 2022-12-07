@@ -13,7 +13,6 @@ const FunctionDeclaration = (node, parent, walk, indent) => {
     }
 }
 
-
 module.exports = {
   BlockStatement,
   FunctionDeclaration

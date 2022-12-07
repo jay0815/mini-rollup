@@ -2,6 +2,10 @@ const ExportNamedDeclaration = (node, parent, walk, indent) => {
     // 只处理 body
     walk.visiter(node.declaration, node, walk, indent)
 }
+const ExportDefaultDeclaration = (node, parent, walk, indent) => {
+    // 只处理 body
+    walk.visiter(node.declaration, node, walk, indent)
+}
 
 const ImportDeclaration = (node, parent, walk, indent) => {
     // 只处理 body
@@ -18,5 +22,6 @@ module.exports = {
   ExportNamedDeclaration,
   ImportDeclaration,
   ImportSpecifier,
-  ImportDefaultSpecifier
+  ImportDefaultSpecifier,
+  ExportDefaultDeclaration
 }
