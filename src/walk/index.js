@@ -1,8 +1,17 @@
 const visitors = require('../visitors/index');
 const Scope = require('./scope');
-const { print } = require('../utils/space');
+// const { print } = require('../utils/space');
 
 const enter = (node, parent, indent) => {
+  if (parent && parent._addToStatement) {
+    node._addToStatement = parent._addToStatement;
+  }
+  if (parent && parent._module) {
+    node._module = parent._module;
+  }
+  if (parent && parent._addToScope) {
+    node._addToScope = parent._addToScope;
+  }
   if (node.type) {
     switch (node.type) {
       case "Program": {
@@ -10,14 +19,11 @@ const enter = (node, parent, indent) => {
         break;
       }
       case "Identifier": {
-        //从当前的作用域向上递归，找这个变量在哪个作用域中定义 
-        const definingScope = node._scope.findDefiningScope(node.name); 
-        if (!definingScope) { 
-            statement._dependsOn[node.name] = true;//表示这是一个外部依赖的变量 
-        }
+        node._addToStatement(node.name);
         break;
       }
       case "VariableDeclarator": {
+        node._addToScope(node)
         if (parent.type === 'ExportNamedDeclaration') {
           parent._module.setExportParams(node.id.name, {
             localName: node.id.name,
@@ -41,12 +47,13 @@ const enter = (node, parent, indent) => {
         break;
       }
       case "FunctionDeclaration": {
+        // print(indent, `Function: ${node.id.name} -> Scope Start`)
         const functionScop = new Scope({
           parent: parent._scope
         });
         node._scope = functionScop;
-        // print(indent, `Function: ${node.id.name} -> Scope Start`)
         parent._scope.add(node.id.name, node._scope);
+        node._addToScope(node)
         break;
       }
       case "ImportDefaultSpecifier": {
@@ -58,7 +65,7 @@ const enter = (node, parent, indent) => {
         break;
       }
       case "ImportSpecifier": {
-        parent._module.setImportParams(node.imported.name, {
+        parent._module.setImportParams(node.local.name, {
           localName: node.local.name,
           name: node.imported.name,
           source: parent.source.value
@@ -67,7 +74,6 @@ const enter = (node, parent, indent) => {
       }
       default: {
         node._scope = parent._scope;
-        node._module = parent._module;
         break;
       }
     }
@@ -86,6 +92,7 @@ const leave = (node, indent) => {
         break;
       }
       default: {
+        node._addToStatement = undefined;
         break;
       }
     }

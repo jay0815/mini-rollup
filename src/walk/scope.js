@@ -5,7 +5,7 @@ class Scope {
   }
 
   add (variable, scope) {
-    this.scope[variable] = scope;
+    this.scope[variable] = scope || null;
   }
 
   contains(variable) {
@@ -15,7 +15,7 @@ class Scope {
 
   findDefiningScope(variable) {
     if (typeof this.scope[variable] !== 'undefined') {
-      return  this;
+      return this;
     }
     if (this.parent) {
       return this.parent.findDefiningScope(variable)

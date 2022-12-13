@@ -1,8 +1,8 @@
-const ExpressionStatement = () => {
+const ExpressionStatement = (node, parent, walk, indent) => {
     walk.visiter(node.expression, node, walk, indent + 1)
 }
-const CallExpression = () => {
-    walk.visiter(node.body, node, walk, indent + 1)
+const CallExpression = (node, parent, walk, indent) => {
+    walk.visiter(node.callee, node, walk, indent)
 }
 
 

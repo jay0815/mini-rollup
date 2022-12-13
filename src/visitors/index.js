@@ -2,7 +2,8 @@ const {
   VariableDeclarator,
   VariableDeclaration
 } = require('./variable');
-const { Program } = require('./program');
+const { Program, Identifier } = require('./program');
+const { ExpressionStatement, CallExpression } = require('./expression');
 const { BlockStatement, FunctionDeclaration } = require('./function');
 const { ExportNamedDeclaration,
   ImportDeclaration,
@@ -17,5 +18,7 @@ module.exports = {
   ExportNamedDeclaration,
   ImportDeclaration,
   ImportSpecifier,
-  ImportDefaultSpecifier
+  ImportDefaultSpecifier,
+  Identifier,
+  ExpressionStatement, CallExpression
 }

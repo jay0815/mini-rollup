@@ -1,4 +1,4 @@
-const visiter = require('./walk/index');
+const analyze = require('./walk/analyze');
 const Scope = require('./walk/scope');
 const acorn = require('acorn');
 const { default: MagicString } = require('magic-string');
@@ -9,22 +9,23 @@ class Module {
     path = '', 
     bundle = null
   } = {}) {
+    this.imports = {};
+    this.exports = {};
+    this.definitions = {};
     this.code = new MagicString(code);
-    this.path = path;
-    this.bundle = bundle;
     this.ast = acorn.parse(code, {
       locations: true,
       ranges: true,
       sourceType: 'module',
       ecmaVersion: 7
     });
-    const global = new Scope();
-    this.ast._scope = global;
-    this.ast._module = this;
-    this.imports = {};
-    this.exports = {};
-    this.definitions = {};
-    visiter(this.ast, null);
+    this.path = path;
+    this.bundle = bundle;
+    this.analyze(code);
+  }
+
+  analyze() {
+    analyze(this.ast, this.code, this)
   }
 
   setImportParams(key, value) {
@@ -50,6 +51,7 @@ class Module {
     for(const key in _dependsOn) {
       if (Object.hasOwnProperty.call(_dependsOn, key)) {
         // const element = _dependsOn[key];
+        console.log('statement', key)
         const v = this.define(key);
         res.push(v);
       }
@@ -65,6 +67,7 @@ class Module {
     if (false) {
       // import define
     } else {
+      console.log('name', name)
       return this.definitions[name];
     }
   }
@@ -82,5 +85,21 @@ class Module {
   }
 
 }
+
+
+
+
+// const __main__ = () => {
+//   const code =
+//     `const a = () =>  1;
+//       const b = () => 2;
+//       a();
+//       a();`
+//   const module = new Module({ code })
+//   const statements = module.expandAllStatements()
+//   console.log(statements)
+// }
+
+// __main__();
 
 module.exports = Module;

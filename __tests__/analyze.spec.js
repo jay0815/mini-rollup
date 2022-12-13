@@ -1,70 +1,29 @@
 const analyze = require('../src/walk/analyze');
 const acorn = require('acorn');
 const MagicString = require('magic-string');
+const Module = require('../src/module');
 
-const getCode = (code) => {
-  return {
-    ast: acorn.parse(code, {
-      locations: true,
-      ranges: true,
-      sourceType: 'module',
-      ecmaVersion: 7
-    }),
-    magicString: new MagicString(code)
-  }
-}
+// const getCode = (code) => {
+//   return {
+//     ast: acorn.parse(code, {
+//       locations: true,
+//       ranges: true,
+//       sourceType: 'module',
+//       ecmaVersion: 7
+//     }),
+//     magicString: new MagicString(code)
+//   }
+// }
 describe("case one", () => {
 
-  test("single top level variable", () => {
-    // prepear
-    const { ast, magicString } = getCode("const a = 1")
-
-    analyze(ast, magicString)
-
-    expect(ast._scope.contains('a')).toBe(true);
-    expect(ast._scope.findDefiningScope('a')).toEqual(ast._scope)
-  })
-
-  test("double top level variables", () => {
-    // prepear
-    const { ast, magicString } = getCode(
-      `const a = 1;
-      const b = 2;`
-    )
-
-    analyze(ast, magicString)
-
-    expect(ast._scope.contains('a')).toBe(true);
-    expect(ast._scope.contains('b')).toBe(true);
-    expect(ast._scope.findDefiningScope('a')).toEqual(ast._scope)
-    expect(ast._scope.findDefiningScope('b')).toEqual(ast._scope)
-  })
-
-  test("single top level function declare", () => {
-    const { ast, magicString } = getCode(
-      `function f1 () {
-        const d = 'd';
-      }
-      `
-    )
-    analyze(ast, magicString)
-
-    expect(ast._scope.contains('f1')).toBe(true);
-    expect(ast._scope.contains('d')).toBe(false);
-    expect(ast._scope.findDefiningScope('f1')).toEqual(ast._scope)
-    expect(ast._scope.findDefiningScope('d')).toEqual(undefined)
-  })
-
   test("mix top level declartions", () => {
-    const { ast, magicString } = getCode(
-      `const a = 1;
+    const code = `const a = 1;
       function f1 () {
         const d = 'd';
       }
       const b = '2';
       `
-    )
-    analyze(ast, magicString);
+    const { ast } = new Module({ code, path: '', bundle: null })
     expect(ast._scope.contains('a')).toBe(true);
     expect(ast._scope.contains('f1')).toBe(true);
     expect(ast._scope.contains('b')).toBe(true);
@@ -87,27 +46,19 @@ describe("case one", () => {
 })
 
 describe("AST Analyse方法", () => {
-  it("空语法树", () => {
-    const ast = {
-      body: [],
-    };
 
-    analyse(ast);
-  });
+  it("返回值", () => {
+    const { ast } = new Module({ code: `const a = () => 'a'`, path: '', bundle: null })
+    
+    expect(ast._scope.contains('a')).toBe(true)
+    // expect(ast._scope.findDefiningScope('a')).toBe(true)
 
-  // it("返回值", () => {
-  //   const { ast, magicString } = getCode(`const a = () => 'a'`)
+    expect(ast.body[0]._defines).toEqual({ a: true })  // 变量定义
+    expect(ast.body[0]._dependsOn).toEqual({})  // 依赖外部变量
+    expect(ast.body[0]._included).toEqual(false) // 是否已经被打包
+    expect(ast.body[0]._source.toString()).toBe(`const a = () => 'a'`) // 源码
 
-  //   analyse(ast, magicString)
-  //   expect(ast._scope.cantains('a')).toBe(true)
-  //   // expect(ast._scope.findDefiningScope('a')).toBe(true)
-
-  //   expect(ast.body[0]._defines).toEqual({ a: true })  // 变量定义
-  //   expect(ast.body[0]._dependsOn).toEqual({})  // 依赖外部变量
-  //   expect(ast.body[0]._included).toEqual(false) // 是否已经被打包
-  //   expect(ast.body[0]._source.toString()).toBe(`const a = () => 'a'`) // 源码
-
-  // })
+  })
 
 
   describe("作用域分析", () => {
