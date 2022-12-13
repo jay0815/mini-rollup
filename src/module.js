@@ -45,18 +45,25 @@ class Module {
    * @param {*} statement 
    * @returns 
    */
-  expandStatement(statement) {
+  expandStatement(statement, dependsOn) {
     const res = [];
     const {_dependsOn} = statement;
+    let hasDeclare = true;
     for(const key in _dependsOn) {
       if (Object.hasOwnProperty.call(_dependsOn, key)) {
-        // const element = _dependsOn[key];
-        console.log('statement', key)
         const v = this.define(key);
-        res.push(v);
+        if (v) {
+          if (!dependsOn.has(key)) {
+            dependsOn.set(key, v)
+          }
+        } else {
+          hasDeclare = false;
+        }
       }
     }
-    res.push(statement)
+    if (hasDeclare) {
+      res.push(statement)
+    }
     return res;
   }
   /**
@@ -67,37 +74,40 @@ class Module {
     if (false) {
       // import define
     } else {
-      console.log('name', name)
+      // console.log('name', name)
       return this.definitions[name];
     }
   }
 
   expandAllStatements() {
     const allStatements = [];
+    const dependsOn = new Map(); 
     this.ast.body.forEach((node) => {
       if (['VariableDeclaration', 'ImportDeclaration'].includes(node.type)) {
         return;
       }
-      const statement = this.expandStatement(node);
+      const statement = this.expandStatement(node, dependsOn);
       allStatements.push(...statement);
     })
-    return allStatements;
+    const dependsOnStateMent = [];
+    dependsOn.forEach((node) => {
+      dependsOnStateMent.push(node);
+    })
+    return [...dependsOnStateMent, ...allStatements];
   }
 
 }
-
-
-
 
 // const __main__ = () => {
 //   const code =
 //     `const a = () =>  1;
 //       const b = () => 2;
 //       a();
-//       a();`
+//       a();
+//       console.log(1);
+//       c()`
 //   const module = new Module({ code })
 //   const statements = module.expandAllStatements()
-//   console.log(statements)
 // }
 
 // __main__();
